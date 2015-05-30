@@ -1,0 +1,106 @@
+//
+//  ShotsGridController.swift
+//  iShots
+//
+//  Created by Lala Vaishno De on 5/29/15.
+//  Copyright (c) 2015 Casa Wee. All rights reserved.
+//
+
+import Foundation
+import UIKit
+
+class ShotsGridController : UIViewController, UICollectionViewDataSource , UICollectionViewDelegate {
+    
+    @IBOutlet var collectionView: UICollectionView!
+    @IBOutlet var layout : UICollectionViewFlowLayout!
+    
+    
+    var shots : [Shot]!
+    var cellHeight : CGFloat = 240
+    
+    
+    override func viewDidLoad() {
+        
+        super.viewDidLoad()
+        
+        title = "Shots"
+        collectionView.delegate = self
+        collectionView.dataSource = self
+        
+        collectionView.backgroundColor = UIColor.clearColor()
+        
+        
+        layout.minimumInteritemSpacing = 0
+        layout.minimumLineSpacing = 0
+        
+        let cellWidth = self.view.frame.width/2
+        layout.itemSize = CGSizeMake(cellWidth, cellHeight)
+        
+        
+        shots = [Shot]()
+        let api = DribbbleAPI()
+        
+        
+        // **** loadShots returns a Shot that is sent into didLoadShots to be saved and view reloaded
+        api.loadShots(didLoadShots)
+        
+    }
+    
+    func didLoadShots(shots : [Shot]) {
+        
+        self.shots = shots
+        collectionView.reloadData()
+        
+    }
+    
+    func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
+        
+        let cell = collectionView.dequeueReusableCellWithReuseIdentifier("ShotCell", forIndexPath: indexPath) as ShotCell
+        
+        let shot = shots[indexPath.row]
+        cell.titleLabel.text = shot.title
+        cell.nameLabel.text = shot.user.name
+        
+        asyncLoadShotImage(shot, imageView: cell.coverImageView)
+        
+        return cell
+    
+    }
+    
+    func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return shots.count
+    }
+    
+    
+    // loading images using async
+    func asyncLoadShotImage(shot: Shot, imageView : UIImageView) {
+        
+        // name of the queue
+        let downloadQueue = dispatch_queue_create("com.iShots.processdownload", nil)
+        
+        dispatch_async(downloadQueue) {
+            
+            var data = NSData(contentsOfURL: NSURL(string: shot.imageUrl)!)
+            
+            var image = UIImage?()
+            if(data != nil) {
+                
+                shot.imageData = data
+                image = UIImage(data: data!)!
+            }
+            
+            
+            // return to main queue
+            dispatch_async(dispatch_get_main_queue()) {
+                imageView.image = image
+            }
+            
+        }
+        
+    }
+    
+    
+    
+    
+    
+}
